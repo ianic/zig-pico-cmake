@@ -6,3 +6,5 @@ The current configuration is for the Pico W and this is basically the Pico W bli
 Like in the C Version, you need to adjust the linked libraries in the CMakeLists.txt.
 
 To build this example with the regular non-W Pico, remove the `pico_cyw43_arch_none` library from CMakeLists and rewrite `main.zig` to not use the W-specific cyw43 functions.
+
+Made with zig 0.14.0-dev.2457+82f35c518 and Pico-SDK 2.1.0
