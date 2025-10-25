@@ -3,9 +3,9 @@ const std = @import("std");
 // Choose your board
 const Board =
     // .pico;
-    .pico_w;
-// .pico2;
-// .pico2_w;
+    // .pico_w;
+    // .pico2;
+    .pico2_w;
 
 // Choose whether Stdio goes to USB or UART
 const StdioUsb = true;
