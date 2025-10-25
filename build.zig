@@ -31,9 +31,11 @@ pub fn build(b: *std.Build) anyerror!void {
 
     const lib = b.addObject(.{
         .name = "zig-pico",
-        .root_source_file = b.path("src/main.zig"),
-        .target = b.resolveTargetQuery(target),
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/main.zig"),
+            .target = b.resolveTargetQuery(target),
+            .optimize = optimize,
+        }),
     });
 
     // get and perform basic verification on the pico sdk path
