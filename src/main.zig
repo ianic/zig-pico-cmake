@@ -1,23 +1,28 @@
-pub const p = @cImport({
-    @cInclude("pico.h");
-    @cInclude("stdio.h");
-    @cInclude("pico/stdlib.h");
-    // PICO W specific header
-    @cInclude("pico/cyw43_arch.h");
-});
 const std = @import("std");
+const pico = @import("pico.zig");
+const stdio = pico.stdio;
+const cyw = pico.cyw;
+const gpio = pico.gpio;
+const printf = pico.c.printf;
 
-// Basically the pico_w blink sample
 export fn main() c_int {
-    _ = p.stdio_init_all();
-    if (p.cyw43_arch_init() != 0) {
-        return -1;
-    }
+    stdio.init();
+    cyw.init();
+
+    const led_pin = 15;
+    gpio.init(led_pin, .output);
+
+    var i: u32 = 0;
     while (true) {
-        p.cyw43_arch_gpio_put(p.CYW43_WL_GPIO_LED_PIN, true);
-        p.sleep_ms(100);
-        p.cyw43_arch_gpio_put(p.CYW43_WL_GPIO_LED_PIN, false);
-        p.sleep_ms(50);
-        _ = p.printf("Hello world\n");
+        cyw.ledPut(true);
+        gpio.put(led_pin, false);
+        stdio.sleep(250);
+
+        cyw.ledPut(false);
+        gpio.put(led_pin, true);
+        stdio.sleep(100);
+
+        _ = printf("Hello world %d\n", i);
+        i +%= 1;
     }
 }
