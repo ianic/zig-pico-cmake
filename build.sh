@@ -6,7 +6,7 @@ zig=~/.build/zig/zig-x86_64-linux-0.15.1/zig
 export PICO_SDK_PATH=~/Code/pico/pico-sdk
 $zig build -Doptimize=ReleaseSmall -freference-trace=10
 
-picotool load -x zig-out/firmware.uf2
+picotool load -x -f zig-out/firmware.uf2
 
 exit 0
 

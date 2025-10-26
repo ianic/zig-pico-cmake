@@ -4,3 +4,4 @@ zig-cache/
 zig
 lib/
 /.zig-cache/
+/src/secrets.zig

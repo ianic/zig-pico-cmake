@@ -18,10 +18,19 @@ if (STDIO_UART)
     pico_enable_stdio_usb(mlem 0)   
 endif()
 
+target_include_directories(mlem PRIVATE
+    ${CMAKE_CURRENT_LIST_DIR}/config     # Where you place lwipopts.h
+    # ${PICO_SDK_PATH}/lib/lwip
+    # Other pico-sdk includes...
+)
+
 # Adjust libraries as needed
 target_link_libraries(mlem
     pico_stdlib
     pico_cyw43_arch_none
+    pico_cyw43_arch_lwip_threadsafe_background
+    #pico_cyw43_arch_lwip_poll
+    #pico_cyw43_driver
     ${CMAKE_SOURCE_DIR}/zig-out/mlem.o
     # wrappers
     -Wl,--wrap=gpio_set_dir
