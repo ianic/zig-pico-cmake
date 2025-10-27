@@ -36,43 +36,34 @@ pub const cyw = struct {
         c.cyw43_arch_gpio_put(c.CYW43_WL_GPIO_LED_PIN, value);
     }
 
-    pub fn connect(ssid: [*c]const u8, pwd: [*c]const u8, timeout: u32) isize {
+    pub fn connect(ssid: [*c]const u8, pwd: [*c]const u8, timeout: u32) !void {
         c.cyw43_arch_enable_sta_mode();
-        return c.cyw43_arch_wifi_connect_timeout_ms(ssid, pwd, c.CYW43_AUTH_WPA2_AES_PSK, timeout);
-    }
-
-    pub fn send() void {
-        const target = "192.168.190.235";
-        const port = 4242;
-        const pcb: *c.udp_pcb = c.udp_new();
-
-        var addr: c.ip_addr_t = undefined;
-        var r = c.ipaddr_aton(target, &addr);
-        _ = c.printf("aton res %d\n", r);
-
-        var i: usize = 0;
-        while (true) : (i +%= 1) {
-            const fmt = "udp send {d}\n";
-            const cnt: u16 = @intCast(std.fmt.count(fmt, .{i}));
-            const p: *c.struct_pbuf = c.pbuf_alloc(c.PBUF_TRANSPORT, cnt + 1, c.PBUF_RAM);
-            var buf: []u8 = undefined;
-            buf.ptr = @ptrCast(p.payload.?);
-            buf.len = cnt + 1;
-            _ = std.fmt.bufPrintZ(buf, fmt, .{i}) catch {
-                _ = c.printf("bufPrintZ no space \n");
-            };
-
-            const er = c.udp_sendto(pcb, p, &addr, port);
-            _ = c.printf("send %d\n", er);
-            r = c.pbuf_free(p);
-            _ = c.printf("free res %d\n", r);
-            stdio.sleep(1000);
-        }
+        try check(c.cyw43_arch_wifi_connect_timeout_ms(ssid, pwd, c.CYW43_AUTH_WPA2_AES_PSK, timeout));
     }
 
     pub fn deinit() void {
         c.cyw43_arch_deinit();
     }
+
+    pub const Udp = struct {
+        pcb: *c.udp_pcb = undefined,
+        addr: c.ip_addr_t = undefined,
+        port: u16 = 0,
+
+        pub fn init(self: *Udp, target: [*c]const u8, port: u16) !void {
+            self.port = port;
+            self.pcb = c.udp_new();
+            try check(c.ipaddr_aton(target, &self.addr));
+        }
+
+        pub fn send(self: *Udp, data: []const u8) !void {
+            const p: *c.struct_pbuf = c.pbuf_alloc(c.PBUF_TRANSPORT, @intCast(data.len), c.PBUF_RAM);
+            defer _ = c.pbuf_free(p);
+            const ptr: [*c]u8 = @ptrCast(p.payload.?);
+            @memcpy(ptr, data);
+            try check(c.udp_sendto(self.pcb, p, &self.addr, self.port));
+        }
+    };
 };
 
 pub const gpio = struct {
@@ -90,3 +81,30 @@ pub const gpio = struct {
         gpio_put(pin, value);
     }
 };
+
+pub fn check(res: c_int) !void {
+    if (res >= 0) return;
+    if (res != c.ERR_OK) {
+        _ = c.printf("something failed with %d\n", res);
+    }
+    switch (res) {
+        c.ERR_OK => {},
+        c.ERR_MEM => return error.Mem,
+        c.ERR_BUF => return error.Buf,
+        c.ERR_TIMEOUT => return error.Timeout,
+        c.ERR_RTE => return error.Rte,
+        c.ERR_INPROGRESS => return error.Inprogress,
+        c.ERR_VAL => return error.Val,
+        c.ERR_WOULDBLOCK => return error.WouldBlock,
+        c.ERR_USE => return error.Use,
+        c.ERR_ALREADY => return error.Already,
+        c.ERR_ISCONN => return error.IsConn,
+        c.ERR_CONN => return error.Conn,
+        c.ERR_IF => return error.If,
+        c.ERR_ABRT => return error.Abrt,
+        c.ERR_RST => return error.Rst,
+        c.ERR_CLSD => return error.Clsd,
+        c.ERR_ARG => return error.Arg,
+        else => return error.Unkonown,
+    }
+}

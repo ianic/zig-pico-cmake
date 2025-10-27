@@ -4,17 +4,29 @@ const stdio = pico.stdio;
 const cyw = pico.cyw;
 const gpio = pico.gpio;
 const printf = pico.c.printf;
-const secrets = @import("secrets.zig");
+const conf = @import("config.zig");
 
 export fn main() c_int {
+    _main() catch |err| {
+        const str = @errorName(err);
+        _ = printf("fatal error %s\n", &str[0]);
+        return -1;
+    };
+    return 0;
+}
+
+fn _main() !void {
     stdio.init();
     cyw.init();
 
     const led_pin = 15;
     gpio.init(led_pin, .output);
 
-    const res = cyw.connect(secrets.ssid, secrets.pwd, 30000);
-    _ = printf("wifi connect to ssid: '%s' result: %d\n", secrets.ssid, res);
+    try cyw.connect(conf.ssid, conf.pwd, 30000);
+    _ = printf("wifi connected to ssid: '%s'\n", conf.ssid);
+
+    var udp: cyw.Udp = .{};
+    try udp.init(conf.target, conf.port);
 
     var i: u32 = 0;
     while (true) {
@@ -24,11 +36,11 @@ export fn main() c_int {
 
         cyw.ledPut(false);
         gpio.put(led_pin, true);
-        stdio.sleep(200);
+        stdio.sleep(1000);
 
         _ = printf("Hello world %d\n", i);
         i +%= 1;
 
-        cyw.send();
+        try udp.send("iso medo u ducan, nije reko dobar dan, ajde medo van nisi reko dobar dan\n");
     }
 }
