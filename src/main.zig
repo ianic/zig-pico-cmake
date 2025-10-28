@@ -5,11 +5,16 @@ const cyw = pico.cyw;
 const gpio = pico.gpio;
 const printf = pico.c.printf;
 const conf = @import("config.zig");
+const log = std.log.scoped(.io);
+
+pub const std_options: std.Options = .{
+    .log_level = .debug,
+    .logFn = pico.logFn,
+};
 
 export fn main() c_int {
     _main() catch |err| {
-        const str = @errorName(err);
-        _ = printf("fatal error %s\n", &str[0]);
+        log.err("fatal {}", .{err});
         return -1;
     };
     return 0;
@@ -23,10 +28,13 @@ fn _main() !void {
     gpio.init(led_pin, .output);
 
     try cyw.connect(conf.ssid, conf.pwd, 30000);
-    _ = printf("wifi connected to ssid: '%s'\n", conf.ssid);
+    log.debug("wifi connected to ssid: '{s}'", .{conf.ssid});
 
     var udp: cyw.Udp = .{};
     try udp.init(conf.target, conf.port);
+
+    var timer: pico.Timer = .{};
+    try timer.init(500, onTimer);
 
     var i: u32 = 0;
     while (true) {
@@ -38,9 +46,15 @@ fn _main() !void {
         gpio.put(led_pin, true);
         stdio.sleep(1000);
 
-        _ = printf("Hello world %d\n", i);
+        log.debug("loop run {}", .{i});
+        //_ = printf("Hello world %d\n", i);
         i +%= 1;
 
         try udp.send("iso medo u ducan, nije reko dobar dan, ajde medo van nisi reko dobar dan\n");
     }
+}
+
+fn onTimer(_: ?*pico.Timer.T) callconv(.c) bool {
+    log.debug("onTimer", .{});
+    return true;
 }
