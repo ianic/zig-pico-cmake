@@ -18,23 +18,19 @@ const PicoSDKPath: ?[]const u8 = null;
 const ARMNoneEabiPath: ?[]const u8 = null;
 
 pub fn build(b: *std.Build) anyerror!void {
-    const run_gen_step = b.option(bool, "gen", "Generate imports") orelse false;
-
-    // ------------------
-    const target = std.Target.Query{
+    const target = b.resolveTargetQuery(std.Target.Query{
         .abi = .eabi,
         .cpu_arch = .thumb,
         .cpu_model = .{ .explicit = cpu_model_by_board(Board) },
         .os_tag = .freestanding,
-    };
-
+    });
     const optimize = b.standardOptimizeOption(.{});
 
     const lib = b.addObject(.{
         .name = "zig-pico",
         .root_module = b.createModule(.{
             .root_source_file = b.path("src/main.zig"),
-            .target = b.resolveTargetQuery(target),
+            .target = target,
             .optimize = optimize,
         }),
     });
@@ -189,34 +185,22 @@ pub fn build(b: *std.Build) anyerror!void {
     uf2_step.dependOn(&uf2_create_step.step);
     b.default_step = uf2_step;
 
-    if (run_gen_step) {
-        const gpa = b.allocator;
-        var args: std.ArrayList([]const u8) = .empty;
-        try args.append(gpa, "/home/ianic/.build/zig/zig-x86_64-linux-0.15.1/zig");
-        try args.append(gpa, "translate-c");
-        try args.append(gpa, "-target");
-        try args.append(gpa, "thumb-freestanding-eabi");
-        try args.append(gpa, "cimport.h");
-        for (lib.root_module.c_macros.items) |macro| {
-            try args.append(gpa, macro);
-        }
-        for (lib.root_module.include_dirs.items) |dir| {
-            switch (dir) {
-                .path, .path_system => |s| if (s != .generated) {
-                    try args.append(gpa, "-I");
-                    try args.append(gpa, s.getDisplayName());
-                },
-                else => {},
-            }
-        }
-        const translate_c_step = b.addSystemCommand(try args.toOwnedSlice(gpa));
-        const lp = translate_c_step.addOutputFileArg("cimport_generated.zig");
-        lib.step.dependOn(&translate_c_step.step);
-        _ = lp;
-        // const move_file_step = b.addInstallFile(lp, "cimport_generated.zig");
-        // move_file_step.step.dependOn(&translate_c_step.step);
-        // b.default_step.dependOn(&move_file_step.step);
+    const sdk = b.addTranslateC(.{
+        .root_source_file = b.path("cimport.h"),
+        .target = target,
+        .optimize = optimize,
+    });
+    sdk.include_dirs = lib.root_module.include_dirs.toManaged(b.allocator);
+    for (lib.root_module.c_macros.items) |macro| {
+        sdk.defineCMacroRaw(macro[2..]);
     }
+    sdk.step.dependOn(&config_autogen_step.step);
+    //lib.step.dependOn(&translate_c.step);
+    //lib.root_module.addImport("sdk", translate_c.createModule());
+
+    const move_file_step = b.addInstallFile(sdk.getOutput(), "c_sdk.zig");
+    move_file_step.step.dependOn(&sdk.step);
+    b.default_step.dependOn(&move_file_step.step);
 }
 
 // ------------------ Board support

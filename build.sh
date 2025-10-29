@@ -8,8 +8,6 @@ $zig build -Doptimize=ReleaseSafe -freference-trace=10 --verbose-cimport
 
 picotool load -x -f zig-out/firmware.uf2
 
-$zig build -Dgen=true >/tmp/gen_output
-
 exit 0
 
 cd ~/Code/pico/
