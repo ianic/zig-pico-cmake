@@ -1,6 +1,6 @@
 const std = @import("std");
 const log = std.log.scoped(.pico);
-const c = @import("cimport_generated.zig");
+const c = @import("c_sdk.zig");
 
 extern fn gpio_set_dir(gpio: u32, out: bool) void;
 extern fn gpio_put(gpio: u32, value: bool) void;

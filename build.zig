@@ -34,6 +34,11 @@ pub fn build(b: *std.Build) anyerror!void {
             .optimize = optimize,
         }),
     });
+    const sdk = b.addTranslateC(.{
+        .root_source_file = b.path("src/c_sdk.h"),
+        .target = target,
+        .optimize = optimize,
+    });
 
     // get and perform basic verification on the pico sdk path
     // if the sdk path contains the pico_sdk_init.cmake file then we know its correct
@@ -81,7 +86,7 @@ pub fn build(b: *std.Build) anyerror!void {
         , .{});
         return;
     };
-    lib.addSystemIncludePath(.{ .cwd_relative = arm_header_location });
+    sdk.addSystemIncludePath(.{ .cwd_relative = arm_header_location });
 
     // Sort out the platform specifics
     const IsRP2040 = Board == .pico or Board == .pico_w;
@@ -110,10 +115,11 @@ pub fn build(b: *std.Build) anyerror!void {
     // Write and include the generated header
     const config_autogen_step = b.addWriteFile("pico/config_autogen.h", header_str);
     lib.step.dependOn(&config_autogen_step.step);
-    lib.addIncludePath(config_autogen_step.getDirectory());
+    sdk.step.dependOn(&config_autogen_step.step);
+    sdk.addIncludePath(config_autogen_step.getDirectory());
 
     // requires running cmake at least once
-    lib.addSystemIncludePath(b.path("build/generated/pico_base"));
+    sdk.addSystemIncludePath(b.path("build/generated/pico_base"));
 
     // PICO SDK includes
     // Find all folders called include in the Pico SDK
@@ -133,7 +139,7 @@ pub fn build(b: *std.Build) anyerror!void {
                 for (allowed_paths) |path| {
                     if (std.mem.indexOf(u8, entry.path, path)) |_| {
                         const pico_sdk_include = try std.fmt.allocPrint(b.allocator, "{s}/src/{s}", .{ pico_sdk_path, entry.path });
-                        lib.addIncludePath(.{ .cwd_relative = pico_sdk_include });
+                        sdk.addIncludePath(.{ .cwd_relative = pico_sdk_include });
                         continue;
                     }
                 }
@@ -142,22 +148,22 @@ pub fn build(b: *std.Build) anyerror!void {
     }
 
     // Define the platform specific macros
-    define_platform_specific_macros(lib, Platform);
+    define_platform_specific_macros(sdk, Platform);
 
     // Define UART or USB constant for headers
-    lib.root_module.addCMacro(PicoStdlibDefine, "1");
+    sdk.defineCMacro(PicoStdlibDefine, "1");
 
     // required for pico_w wifi
-    lib.root_module.addCMacro("PICO_CYW43_ARCH_THREADSAFE_BACKGROUND", "1");
+    sdk.defineCMacro("PICO_CYW43_ARCH_THREADSAFE_BACKGROUND", "1");
     const cyw43_include = try std.fmt.allocPrint(b.allocator, "{s}/lib/cyw43-driver/src", .{pico_sdk_path});
-    lib.addIncludePath(.{ .cwd_relative = cyw43_include });
+    sdk.addIncludePath(.{ .cwd_relative = cyw43_include });
 
     // required by cyw43
     const lwip_include = try std.fmt.allocPrint(b.allocator, "{s}/lib/lwip/src/include", .{pico_sdk_path});
-    lib.addIncludePath(.{ .cwd_relative = lwip_include });
+    sdk.addIncludePath(.{ .cwd_relative = lwip_include });
 
     // options headers
-    lib.addIncludePath(b.path("config/"));
+    sdk.addIncludePath(b.path("config/"));
 
     const compiled = lib.getEmittedBin();
     const install_step = b.addInstallFile(compiled, "mlem.o");
@@ -185,22 +191,9 @@ pub fn build(b: *std.Build) anyerror!void {
     uf2_step.dependOn(&uf2_create_step.step);
     b.default_step = uf2_step;
 
-    const sdk = b.addTranslateC(.{
-        .root_source_file = b.path("cimport.h"),
-        .target = target,
-        .optimize = optimize,
-    });
-    sdk.include_dirs = lib.root_module.include_dirs.toManaged(b.allocator);
-    for (lib.root_module.c_macros.items) |macro| {
-        sdk.defineCMacroRaw(macro[2..]);
-    }
-    sdk.step.dependOn(&config_autogen_step.step);
-    //lib.step.dependOn(&translate_c.step);
-    //lib.root_module.addImport("sdk", translate_c.createModule());
-
-    const move_file_step = b.addInstallFile(sdk.getOutput(), "c_sdk.zig");
-    move_file_step.step.dependOn(&sdk.step);
-    b.default_step.dependOn(&move_file_step.step);
+    const install_sdk = b.addInstallFile(sdk.getOutput(), "c_sdk.zig");
+    install_sdk.step.dependOn(&sdk.step);
+    b.default_step.dependOn(&install_sdk.step);
 }
 
 // ------------------ Board support
@@ -221,23 +214,23 @@ pub fn platform_by_board(board: @Type(.enum_literal)) @Type(.enum_literal) {
     };
 }
 
-pub fn define_platform_specific_macros(compile: *std.Build.Step.Compile, platform: @Type(.enum_literal)) void {
+pub fn define_platform_specific_macros(sdk: *std.Build.Step.TranslateC, platform: @Type(.enum_literal)) void {
     switch (platform) {
         .rp2040 => {
-            compile.root_module.addCMacro("PICO_RP2040", "1");
-            compile.root_module.addCMacro("PICO_32BIT", "1");
-            compile.root_module.addCMacro("PICO_ARM", "1");
-            compile.root_module.addCMacro("PICO_CMSIS_DEVICE", "RP2040");
-            compile.root_module.addCMacro("PICO_DEFAULT_FLASH_SIZE_BYTES", "\"2 * 1024 * 1024\"");
+            sdk.defineCMacro("PICO_RP2040", "1");
+            sdk.defineCMacro("PICO_32BIT", "1");
+            sdk.defineCMacro("PICO_ARM", "1");
+            sdk.defineCMacro("PICO_CMSIS_DEVICE", "RP2040");
+            sdk.defineCMacro("PICO_DEFAULT_FLASH_SIZE_BYTES", "\"2 * 1024 * 1024\"");
         },
         .rp2350 => {
-            compile.root_module.addCMacro("PICO_RP2350", "1");
-            compile.root_module.addCMacro("PICO_32BIT", "1");
-            compile.root_module.addCMacro("PICO_ARM", "1");
-            compile.root_module.addCMacro("PICO_PIO_VERSION", "1");
-            compile.root_module.addCMacro("NUM_DOORBELLS", "1");
-            compile.root_module.addCMacro("PICO_CMSIS_DEVICE", "RP2350");
-            compile.root_module.addCMacro("PICO_DEFAULT_FLASH_SIZE_BYTES", "\"4 * 1024 * 1024\"");
+            sdk.defineCMacro("PICO_RP2350", "1");
+            sdk.defineCMacro("PICO_32BIT", "1");
+            sdk.defineCMacro("PICO_ARM", "1");
+            sdk.defineCMacro("PICO_PIO_VERSION", "1");
+            sdk.defineCMacro("NUM_DOORBELLS", "1");
+            sdk.defineCMacro("PICO_CMSIS_DEVICE", "RP2350");
+            sdk.defineCMacro("PICO_DEFAULT_FLASH_SIZE_BYTES", "\"4 * 1024 * 1024\"");
         },
         else => @compileError("Unknown platform"),
     }
