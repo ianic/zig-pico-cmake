@@ -2,9 +2,6 @@ const std = @import("std");
 const log = std.log.scoped(.pico);
 const c = @import("c_sdk.zig");
 
-extern fn gpio_set_dir(gpio: u32, out: bool) void;
-extern fn gpio_put(gpio: u32, value: bool) void;
-
 pub fn logFn(
     comptime level: std.log.Level,
     comptime scope: @Type(.enum_literal),
@@ -104,11 +101,11 @@ pub const gpio = struct {
 
     pub fn init(pin: u32, dir: Direction) void {
         c.gpio_init(pin);
-        gpio_set_dir(pin, dir == .output);
+        c.gpio_set_dir(pin, dir == .output);
     }
 
     pub fn put(pin: u32, value: bool) void {
-        gpio_put(pin, value);
+        c.gpio_put(pin, value);
     }
 };
 

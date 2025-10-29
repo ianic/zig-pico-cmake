@@ -166,7 +166,7 @@ pub fn build(b: *std.Build) anyerror!void {
     sdk.addIncludePath(b.path("config/"));
 
     const compiled = lib.getEmittedBin();
-    const install_step = b.addInstallFile(compiled, "mlem.o");
+    const install_step = b.addInstallFile(compiled, "app.o");
     install_step.step.dependOn(&lib.step);
 
     // create build directory
@@ -184,7 +184,7 @@ pub fn build(b: *std.Build) anyerror!void {
     const make_step = b.addSystemCommand(&make_argv);
     make_step.step.dependOn(&cmake_step.step);
 
-    const uf2_create_step = b.addInstallFile(b.path("build/mlem.uf2"), "firmware.uf2");
+    const uf2_create_step = b.addInstallFile(b.path("build/app.uf2"), "firmware.uf2");
     uf2_create_step.step.dependOn(&make_step.step);
 
     const uf2_step = b.step("uf2", "Create firmware.uf2");
