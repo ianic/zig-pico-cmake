@@ -1,15 +1,16 @@
 const std = @import("std");
-const pico = @import("pico.zig");
-const stdio = pico.stdio;
-const cyw = pico.cyw;
-const gpio = pico.gpio;
-const adc = pico.adc;
+const hal = @import("hal.zig");
+const stdio = hal.stdio;
+const cyw = hal.cyw;
+const gpio = hal.gpio;
+const adc = hal.adc;
+
 const conf = @import("config.zig");
 const log = std.log.scoped(.io);
 
 pub const std_options: std.Options = .{
     .log_level = .debug,
-    .logFn = pico.logFn,
+    .logFn = hal.logFn,
 };
 
 export fn main() c_int {
@@ -34,7 +35,7 @@ fn _main() !void {
     var udp: cyw.Udp = .{};
     try udp.init(conf.target, conf.port);
 
-    var timer: pico.Timer = .{};
+    var timer: hal.Timer = .{};
     try timer.init(5000, onTimer);
 
     var i: u32 = 0;
@@ -55,7 +56,7 @@ fn _main() !void {
     }
 }
 
-fn onTimer(_: ?*pico.Timer.T) callconv(.c) bool {
+fn onTimer(_: ?*hal.Timer.T) callconv(.c) bool {
     log.debug("onTimer", .{});
     return true;
 }
