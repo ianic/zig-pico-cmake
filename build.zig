@@ -18,6 +18,7 @@ const PicoSDKPath: ?[]const u8 = null;
 const ARMNoneEabiPath: ?[]const u8 = null;
 
 pub fn build(b: *std.Build) anyerror!void {
+    const run_gen_step = b.option(bool, "gen", "Generate imports") orelse false;
 
     // ------------------
     const target = std.Target.Query{
@@ -187,6 +188,35 @@ pub fn build(b: *std.Build) anyerror!void {
     const uf2_step = b.step("uf2", "Create firmware.uf2");
     uf2_step.dependOn(&uf2_create_step.step);
     b.default_step = uf2_step;
+
+    if (run_gen_step) {
+        const gpa = b.allocator;
+        var args: std.ArrayList([]const u8) = .empty;
+        try args.append(gpa, "/home/ianic/.build/zig/zig-x86_64-linux-0.15.1/zig");
+        try args.append(gpa, "translate-c");
+        try args.append(gpa, "-target");
+        try args.append(gpa, "thumb-freestanding-eabi");
+        try args.append(gpa, "cimport.h");
+        for (lib.root_module.c_macros.items) |macro| {
+            try args.append(gpa, macro);
+        }
+        for (lib.root_module.include_dirs.items) |dir| {
+            switch (dir) {
+                .path, .path_system => |s| if (s != .generated) {
+                    try args.append(gpa, "-I");
+                    try args.append(gpa, s.getDisplayName());
+                },
+                else => {},
+            }
+        }
+        const translate_c_step = b.addSystemCommand(try args.toOwnedSlice(gpa));
+        const lp = translate_c_step.addOutputFileArg("cimport_generated.zig");
+        lib.step.dependOn(&translate_c_step.step);
+        _ = lp;
+        // const move_file_step = b.addInstallFile(lp, "cimport_generated.zig");
+        // move_file_step.step.dependOn(&translate_c_step.step);
+        // b.default_step.dependOn(&move_file_step.step);
+    }
 }
 
 // ------------------ Board support

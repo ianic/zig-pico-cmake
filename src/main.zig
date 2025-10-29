@@ -3,7 +3,7 @@ const pico = @import("pico.zig");
 const stdio = pico.stdio;
 const cyw = pico.cyw;
 const gpio = pico.gpio;
-const printf = pico.c.printf;
+const adc = pico.adc;
 const conf = @import("config.zig");
 const log = std.log.scoped(.io);
 
@@ -22,6 +22,7 @@ export fn main() c_int {
 
 fn _main() !void {
     stdio.init();
+    adc.initOnboardTemp();
     cyw.init();
 
     const led_pin = 15;
@@ -34,7 +35,7 @@ fn _main() !void {
     try udp.init(conf.target, conf.port);
 
     var timer: pico.Timer = .{};
-    try timer.init(500, onTimer);
+    try timer.init(5000, onTimer);
 
     var i: u32 = 0;
     while (true) {
@@ -46,8 +47,8 @@ fn _main() !void {
         gpio.put(led_pin, true);
         stdio.sleep(1000);
 
-        log.debug("loop run {}", .{i});
-        //_ = printf("Hello world %d\n", i);
+        const tmp = adc.readOnboardTemperature();
+        log.debug("loop run: {} tmp: {}", .{ i, tmp });
         i +%= 1;
 
         try udp.send("iso medo u ducan, nije reko dobar dan, ajde medo van nisi reko dobar dan\n");

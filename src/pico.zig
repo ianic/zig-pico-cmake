@@ -1,14 +1,7 @@
 const std = @import("std");
+const log = std.log.scoped(.pico);
+const c = @import("cimport_generated.zig");
 
-pub const c = @cImport({
-    @cInclude("pico.h");
-    @cInclude("stdio.h");
-    @cInclude("pico/stdlib.h");
-    // PICO W specific header
-    @cInclude("pico/cyw43_arch.h");
-});
-
-extern fn gpio_init(gpio: u32) void;
 extern fn gpio_set_dir(gpio: u32, out: bool) void;
 extern fn gpio_put(gpio: u32, value: bool) void;
 
@@ -116,6 +109,36 @@ pub const gpio = struct {
 
     pub fn put(pin: u32, value: bool) void {
         gpio_put(pin, value);
+    }
+};
+
+pub const adc = struct {
+    pub fn init(input: u32) void {
+        c.adc_init();
+        c.adc_select_input(input);
+        c.adc_set_temp_sensor_enabled(true);
+    }
+
+    pub fn initOnboardTemp() void {
+        c.adc_init();
+        c.adc_select_input(4);
+        c.adc_set_temp_sensor_enabled(true);
+    }
+
+    pub fn read() u16 {
+        return c.adc_read();
+    }
+
+    pub fn readOnboardTemperature() f32 {
+        // 12-bit conversion, assume max value == ADC_VREF == 3.3 V
+        const conversionFactor: f32 = @as(f32, 3.3) / (1 << 12);
+        //log.debug("readOnboardTemperature1", .{});
+        const sample = c.adc_read();
+        //log.debug("readOnboardTemperature2", .{});
+        const voltage: f32 = @as(f32, @floatFromInt(sample)) * conversionFactor;
+        const tempC = 27.0 - (voltage - 0.706) / 0.001721;
+
+        return tempC;
     }
 };
 

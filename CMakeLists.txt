@@ -27,15 +27,13 @@ target_include_directories(mlem PRIVATE
 # Adjust libraries as needed
 target_link_libraries(mlem
     pico_stdlib
+    hardware_adc
     pico_cyw43_arch_none
     pico_cyw43_arch_lwip_threadsafe_background
-    #pico_cyw43_arch_lwip_poll
-    #pico_cyw43_driver
     ${CMAKE_SOURCE_DIR}/zig-out/mlem.o
     # wrappers
     -Wl,--wrap=gpio_set_dir
     -Wl,--wrap=gpio_put
-    # -Wl,--wrap=gpio_get
 )
 
 # Generate binary
