@@ -25,9 +25,9 @@ pub fn build(b: *std.Build) anyerror!void {
         const pico_sdk_path = if (config.pico_sdk_path) |sdk_path|
             try std.fs.cwd().realpathAlloc(b.allocator, sdk_path)
         else
-            std.process.getEnvVarOwned(b.allocator, "PICO_SDK_PATH") catch null orelse {
+            std.process.getEnvVarOwned(b.allocator, "PICO_SDK_PATH") catch |err| {
                 std.log.err("The Pico SDK path must be set either through the PICO_SDK_PATH environment variable or at the top of build.zig.", .{});
-                return;
+                return err;
             };
         // perform basic verification on the pico sdk path
         // if the sdk path contains the pico_sdk_init.cmake file then we know its correct
@@ -38,7 +38,7 @@ pub fn build(b: *std.Build) anyerror!void {
                 \\Tried: {s}
                 \\Are you sure you entered the path correctly?"
             , .{pico_init_cmake_path});
-            return;
+            return error.FileNotFound;
         };
         break :brk pico_sdk_path;
     };
@@ -96,9 +96,9 @@ pub fn build(b: *std.Build) anyerror!void {
             const board_header = blk: {
                 const file_name = @tagName(config.board) ++ ".h";
                 const path = b.pathJoin(&.{ pico_sdk_path, "src/boards/include/boards", file_name });
-                std.fs.cwd().access(path, .{}) catch {
+                std.fs.cwd().access(path, .{}) catch |err| {
                     std.log.err("Could not find the header file for board at '{s}'\n", .{path});
-                    return;
+                    return err;
                 };
                 break :blk file_name;
             };
@@ -135,7 +135,7 @@ pub fn build(b: *std.Build) anyerror!void {
                 \\Please set the ARM_NONE_EABI_PATH environment variable with the correct path
                 \\or set the ARMNoneEabiPath variable at the top of build.zig
             , .{});
-            return;
+            return error.FileNotFound;
         };
         sdk.addSystemIncludePath(.{ .cwd_relative = arm_header_path });
 
