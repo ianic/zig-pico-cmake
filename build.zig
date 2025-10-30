@@ -1,30 +1,47 @@
 const std = @import("std");
 
-// Choose your board
-const Board =
-    // .pico;
-    // .pico_w;
-    // .pico2;
-    .pico2_w;
-
-// Choose whether Stdio goes to USB or UART
-const StdioUsb = true;
-const PicoStdlibDefine = if (StdioUsb) "LIB_PICO_STDIO_USB" else "LIB_PICO_STDIO_UART";
-
-// Pico SDK path can be specified here for your convenience
-const PicoSDKPath: ?[]const u8 = null;
-
-// arm-none-eabi toolchain path may be specified here as well
-const ARMNoneEabiPath: ?[]const u8 = null;
+const config: Config = .{
+    .board = .pico2_w,
+    .stdio_output = .usb,
+    .pico_sdk_path = "../pico-sdk",
+};
 
 pub fn build(b: *std.Build) anyerror!void {
     const target = b.resolveTargetQuery(std.Target.Query{
         .abi = .eabi,
         .cpu_arch = .thumb,
-        .cpu_model = .{ .explicit = cpu_model_by_board(Board) },
+        .cpu_model = .{ .explicit = config.board.cpuModel() },
         .os_tag = .freestanding,
     });
     const optimize = b.standardOptimizeOption(.{});
+
+    // Create build directory
+    std.fs.cwd().makeDir("build") catch |err| {
+        if (err != error.PathAlreadyExists) return err;
+    };
+
+    // Find and check pico sdk location
+    const pico_sdk_path = brk: {
+        const pico_sdk_path = if (config.pico_sdk_path) |sdk_path|
+            try std.fs.cwd().realpathAlloc(b.allocator, sdk_path)
+        else
+            std.process.getEnvVarOwned(b.allocator, "PICO_SDK_PATH") catch null orelse {
+                std.log.err("The Pico SDK path must be set either through the PICO_SDK_PATH environment variable or at the top of build.zig.", .{});
+                return;
+            };
+        // perform basic verification on the pico sdk path
+        // if the sdk path contains the pico_sdk_init.cmake file then we know its correct
+        const pico_init_cmake_path = b.pathJoin(&.{ pico_sdk_path, "pico_sdk_init.cmake" });
+        std.fs.cwd().access(pico_init_cmake_path, .{}) catch {
+            std.log.err(
+                \\Provided Pico SDK path does not contain the file pico_sdk_init.cmake
+                \\Tried: {s}
+                \\Are you sure you entered the path correctly?"
+            , .{pico_init_cmake_path});
+            return;
+        };
+        break :brk pico_sdk_path;
+    };
 
     const lib = b.addObject(.{
         .name = "zig-pico",
@@ -32,190 +49,197 @@ pub fn build(b: *std.Build) anyerror!void {
             .root_source_file = b.path("src/main.zig"),
             .target = target,
             .optimize = optimize,
+            .link_libc = true,
         }),
     });
-    const sdk = b.addTranslateC(.{
-        .root_source_file = b.path("src/c_sdk.h"),
-        .target = target,
-        .optimize = optimize,
-    });
+    const lib_install = b.addInstallFile(lib.getEmittedBin(), "lib.o");
+    lib_install.step.dependOn(&lib.step);
 
-    // get and perform basic verification on the pico sdk path
-    // if the sdk path contains the pico_sdk_init.cmake file then we know its correct
-    const pico_sdk_path =
-        if (PicoSDKPath) |sdk_path| sdk_path else std.process.getEnvVarOwned(b.allocator, "PICO_SDK_PATH") catch null orelse {
-            std.log.err("The Pico SDK path must be set either through the PICO_SDK_PATH environment variable or at the top of build.zig.", .{});
-            return;
-        };
-
-    const pico_init_cmake_path = b.pathJoin(&.{ pico_sdk_path, "pico_sdk_init.cmake" });
-    std.fs.cwd().access(pico_init_cmake_path, .{}) catch {
-        std.log.err(
-            \\Provided Pico SDK path does not contain the file pico_sdk_init.cmake
-            \\Tried: {s}
-            \\Are you sure you entered the path correctly?"
-        , .{pico_init_cmake_path});
-        return;
+    const cmake_argv = [_][]const u8{
+        "cmake",
+        "-B",
+        "./build",
+        "-S .",
+        "-DPICO_BOARD=" ++ @tagName(config.board),
+        "-DPICO_PLATFORM=" ++ @tagName(config.board.platform()),
+        b.fmt("-DPICO_SDK_PATH={s}", .{pico_sdk_path}),
+        if (config.stdio_output == .usb) "-DSTDIO_USB=1" else "-DSTDIO_UART=1",
     };
-
-    // default arm-none-eabi includes
-    lib.linkLibC();
-
-    // Standard libary headers may be in different locations on different platforms
-    const arm_header_location = blk: {
-        if (ARMNoneEabiPath) |path| {
-            break :blk path;
-        }
-
-        if (std.process.getEnvVarOwned(b.allocator, "ARM_NONE_EABI_PATH") catch null) |path| {
-            break :blk path;
-        }
-
-        const unix_path = "/usr/arm-none-eabi/include";
-        if (std.fs.accessAbsolute(unix_path, .{})) |_| {
-            break :blk unix_path;
-        } else |err| err catch {};
-
-        break :blk error.StandardHeaderLocationNotSpecified;
-    } catch |err| {
-        err catch {};
-        std.log.err(
-            \\Could not determine ARM Toolchain include directory.
-            \\Please set the ARM_NONE_EABI_PATH environment variable with the correct path
-            \\or set the ARMNoneEabiPath variable at the top of build.zig
-        , .{});
-        return;
-    };
-    sdk.addSystemIncludePath(.{ .cwd_relative = arm_header_location });
-
-    // Sort out the platform specifics
-    const IsRP2040 = Board == .pico or Board == .pico_w;
-    const Platform = comptime platform_by_board(Board);
-
-    // find the board header
-    const board_header = blk: {
-        const header_file = @tagName(Board) ++ ".h";
-        const _board_header = b.pathJoin(&.{ pico_sdk_path, "src/boards/include/boards", header_file });
-
-        std.fs.cwd().access(_board_header, .{}) catch {
-            std.log.err("Could not find the header file for board '{s}'\n", .{@tagName(Board)});
-            return;
-        };
-
-        break :blk header_file;
-    };
-
-    // Autogenerate the header file like the pico sdk would
-    const cmsys_exception_prefix = if (IsRP2040) "" else "//";
-    const header_str = try std.fmt.allocPrint(b.allocator,
-        \\#include "{s}/src/boards/include/boards/{s}"
-        \\{s}#include "{s}/src/rp2_common/cmsis/include/cmsis/rename_exceptions.h"
-    , .{ pico_sdk_path, board_header, cmsys_exception_prefix, pico_sdk_path });
-
-    // Write and include the generated header
-    const config_autogen_step = b.addWriteFile("pico/config_autogen.h", header_str);
-    lib.step.dependOn(&config_autogen_step.step);
-    sdk.step.dependOn(&config_autogen_step.step);
-    sdk.addIncludePath(config_autogen_step.getDirectory());
-
-    // requires running cmake at least once
-    sdk.addSystemIncludePath(b.path("build/generated/pico_base"));
-
-    // PICO SDK includes
-    // Find all folders called include in the Pico SDK
-    {
-        const pico_sdk_src = try std.fmt.allocPrint(b.allocator, "{s}/src", .{pico_sdk_path});
-        var dir = try std.fs.cwd().openDir(pico_sdk_src, .{
-            .iterate = true,
-            .no_follow = true,
-        });
-
-        const allowed_paths = [_][]const u8{ @tagName(Platform), "rp2_common", "common" };
-
-        var walker = try dir.walk(b.allocator);
-        defer walker.deinit();
-        while (try walker.next()) |entry| {
-            if (std.mem.eql(u8, entry.basename, "include")) {
-                for (allowed_paths) |path| {
-                    if (std.mem.indexOf(u8, entry.path, path)) |_| {
-                        const pico_sdk_include = try std.fmt.allocPrint(b.allocator, "{s}/src/{s}", .{ pico_sdk_path, entry.path });
-                        sdk.addIncludePath(.{ .cwd_relative = pico_sdk_include });
-                        continue;
-                    }
-                }
-            }
-        }
-    }
-
-    // Define the platform specific macros
-    define_platform_specific_macros(sdk, Platform);
-
-    // Define UART or USB constant for headers
-    sdk.defineCMacro(PicoStdlibDefine, "1");
-
-    // required for pico_w wifi
-    sdk.defineCMacro("PICO_CYW43_ARCH_THREADSAFE_BACKGROUND", "1");
-    const cyw43_include = try std.fmt.allocPrint(b.allocator, "{s}/lib/cyw43-driver/src", .{pico_sdk_path});
-    sdk.addIncludePath(.{ .cwd_relative = cyw43_include });
-
-    // required by cyw43
-    const lwip_include = try std.fmt.allocPrint(b.allocator, "{s}/lib/lwip/src/include", .{pico_sdk_path});
-    sdk.addIncludePath(.{ .cwd_relative = lwip_include });
-
-    // options headers
-    sdk.addIncludePath(b.path("config/"));
-
-    const compiled = lib.getEmittedBin();
-    const install_step = b.addInstallFile(compiled, "app.o");
-    install_step.step.dependOn(&lib.step);
-
-    // create build directory
-    if (std.fs.cwd().makeDir("build")) |_| {} else |err| {
-        if (err != error.PathAlreadyExists) return err;
-    }
-
-    const uart_or_usb = if (StdioUsb) "-DSTDIO_USB=1" else "-DSTDIO_UART=1";
-    const cmake_pico_sdk_path = b.fmt("-DPICO_SDK_PATH={s}", .{pico_sdk_path});
-    const cmake_argv = [_][]const u8{ "cmake", "-B", "./build", "-S .", "-DPICO_BOARD=" ++ @tagName(Board), "-DPICO_PLATFORM=" ++ @tagName(Platform), cmake_pico_sdk_path, uart_or_usb };
     const cmake_step = b.addSystemCommand(&cmake_argv);
-    cmake_step.step.dependOn(&install_step.step);
+    cmake_step.step.dependOn(&lib_install.step);
 
     const make_argv = [_][]const u8{ "cmake", "--build", "./build", "--parallel" };
     const make_step = b.addSystemCommand(&make_argv);
     make_step.step.dependOn(&cmake_step.step);
 
-    const uf2_create_step = b.addInstallFile(b.path("build/app.uf2"), "firmware.uf2");
-    uf2_create_step.step.dependOn(&make_step.step);
+    const firmware_install = b.addInstallFile(b.path("build/app.uf2"), "firmware.uf2");
+    firmware_install.step.dependOn(&make_step.step);
 
     const uf2_step = b.step("uf2", "Create firmware.uf2");
-    uf2_step.dependOn(&uf2_create_step.step);
+    uf2_step.dependOn(&firmware_install.step);
     b.default_step = uf2_step;
 
-    const install_sdk = b.addInstallFile(sdk.getOutput(), "c_sdk.zig");
-    install_sdk.step.dependOn(&sdk.step);
-    b.default_step.dependOn(&install_sdk.step);
+    // c_sdk.zig generation
+    // not run by default
+    // use `zig build gen` to run
+    // src/c_sdk.h defines which headers will be included
+    {
+        const sdk = b.addTranslateC(.{
+            .root_source_file = b.path("src/c_sdk.h"),
+            .target = target,
+            .optimize = optimize,
+        });
+        defineMacros(sdk);
+
+        const config_autogen = brk: {
+            // Find the board header
+            const board_header = blk: {
+                const file_name = @tagName(config.board) ++ ".h";
+                const path = b.pathJoin(&.{ pico_sdk_path, "src/boards/include/boards", file_name });
+                std.fs.cwd().access(path, .{}) catch {
+                    std.log.err("Could not find the header file for board at '{s}'\n", .{path});
+                    return;
+                };
+                break :blk file_name;
+            };
+            // Autogenerate the header file like the pico sdk would
+            const cmsys_exception_prefix = if (config.board.platform() == .rp2040) "" else "//";
+            const header_str = try std.fmt.allocPrint(b.allocator,
+                \\#include "{s}/src/boards/include/boards/{s}"
+                \\{s}#include "{s}/src/rp2_common/cmsis/include/cmsis/rename_exceptions.h"
+            , .{ pico_sdk_path, board_header, cmsys_exception_prefix, pico_sdk_path });
+
+            // Write and include the generated header
+            break :brk b.addWriteFile("pico/config_autogen.h", header_str);
+        };
+        sdk.step.dependOn(&config_autogen.step);
+        sdk.addIncludePath(config_autogen.getDirectory());
+
+        // Standard libary headers may be in different locations on different platforms
+        const arm_header_path = blk: {
+            if (config.arm_none_eabi_path) |path| {
+                break :blk path;
+            }
+
+            if (std.process.getEnvVarOwned(b.allocator, "ARM_NONE_EABI_PATH") catch null) |path| {
+                break :blk path;
+            }
+
+            const unix_path = "/usr/arm-none-eabi/include";
+            if (std.fs.accessAbsolute(unix_path, .{})) |_| {
+                break :blk unix_path;
+            } else |_| {}
+
+            std.log.err(
+                \\Could not determine ARM Toolchain include directory.
+                \\Please set the ARM_NONE_EABI_PATH environment variable with the correct path
+                \\or set the ARMNoneEabiPath variable at the top of build.zig
+            , .{});
+            return;
+        };
+        sdk.addSystemIncludePath(.{ .cwd_relative = arm_header_path });
+
+        // Find all folders called include in the Pico SDK folder
+        {
+            const pico_sdk_src = try std.fmt.allocPrint(b.allocator, "{s}/src", .{pico_sdk_path});
+            var dir = try std.fs.cwd().openDir(pico_sdk_src, .{
+                .iterate = true,
+                .no_follow = true,
+            });
+
+            const allowed_paths = [_][]const u8{ @tagName(config.board.platform()), "rp2_common", "common" };
+
+            var walker = try dir.walk(b.allocator);
+            defer walker.deinit();
+            while (try walker.next()) |entry| {
+                if (std.mem.eql(u8, entry.basename, "include")) {
+                    for (allowed_paths) |path| {
+                        if (std.mem.indexOf(u8, entry.path, path)) |_| {
+                            const pico_sdk_include = try std.fmt.allocPrint(b.allocator, "{s}/src/{s}", .{ pico_sdk_path, entry.path });
+                            sdk.addIncludePath(.{ .cwd_relative = pico_sdk_include });
+                            continue;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (config.board.wifi()) {
+            // required for pico_w wifi
+            sdk.defineCMacro("PICO_CYW43_ARCH_THREADSAFE_BACKGROUND", "1");
+            const cyw43_include = try std.fmt.allocPrint(b.allocator, "{s}/lib/cyw43-driver/src", .{pico_sdk_path});
+            sdk.addIncludePath(.{ .cwd_relative = cyw43_include });
+            // required by cyw43
+            const lwip_include = try std.fmt.allocPrint(b.allocator, "{s}/lib/lwip/src/include", .{pico_sdk_path});
+            sdk.addIncludePath(.{ .cwd_relative = lwip_include });
+            // options headers
+            sdk.addIncludePath(b.path("config/"));
+        }
+
+        // requires running cmake at least once
+        sdk.addSystemIncludePath(b.path("build/generated/pico_base"));
+
+        const sdk_install = b.addInstallFile(sdk.getOutput(), "c_sdk.zig");
+        sdk_install.step.dependOn(&sdk.step);
+
+        const gen_step = b.step("gen", "Translate C SDK headers to Zig (result: zig-out/c_sdk.zig)");
+        gen_step.dependOn(&sdk_install.step);
+    }
 }
 
-// ------------------ Board support
+const Config = struct {
+    board: Board,
+    stdio_output: StdioOutput,
+    pico_sdk_path: ?[]const u8 = null,
+    arm_none_eabi_path: ?[]const u8 = null,
+};
 
-pub fn cpu_model_by_board(board: @Type(.enum_literal)) *const std.Target.Cpu.Model {
-    return switch (board) {
-        .pico, .pico_w => &std.Target.arm.cpu.cortex_m0plus,
-        .pico2, .pico2_w => &std.Target.arm.cpu.cortex_m33,
-        else => @compileError("Unknown board type"),
+const StdioOutput = enum {
+    usb,
+    uart,
+};
+
+const Board = enum {
+    pico,
+    pico_w,
+    pico2,
+    pico2_w,
+
+    const Platform = enum {
+        rp2040,
+        rp2350,
     };
-}
 
-pub fn platform_by_board(board: @Type(.enum_literal)) @Type(.enum_literal) {
-    return switch (board) {
-        .pico, .pico_w => .rp2040,
-        .pico2, .pico2_w => .rp2350,
-        else => @compileError("Unknown platform"),
-    };
-}
+    fn cpuModel(board: Board) *const std.Target.Cpu.Model {
+        return switch (board) {
+            .pico, .pico_w => &std.Target.arm.cpu.cortex_m0plus,
+            .pico2, .pico2_w => &std.Target.arm.cpu.cortex_m33,
+        };
+    }
 
-pub fn define_platform_specific_macros(sdk: *std.Build.Step.TranslateC, platform: @Type(.enum_literal)) void {
-    switch (platform) {
+    inline fn platform(board: Board) Platform {
+        return switch (board) {
+            .pico, .pico_w => .rp2040,
+            .pico2, .pico2_w => .rp2350,
+        };
+    }
+
+    fn wifi(board: Board) bool {
+        return switch (board) {
+            .pico_w, .pico2_w => true,
+            .pico, .pico2 => false,
+        };
+    }
+};
+
+pub fn defineMacros(sdk: *std.Build.Step.TranslateC) void {
+    // Define UART or USB constant for headers
+    sdk.defineCMacro(
+        if (config.stdio_output == .usb) "LIB_PICO_STDIO_USB" else "LIB_PICO_STDIO_UART",
+        "1",
+    );
+
+    switch (config.board.platform()) {
         .rp2040 => {
             sdk.defineCMacro("PICO_RP2040", "1");
             sdk.defineCMacro("PICO_32BIT", "1");
@@ -232,6 +256,5 @@ pub fn define_platform_specific_macros(sdk: *std.Build.Step.TranslateC, platform
             sdk.defineCMacro("PICO_CMSIS_DEVICE", "RP2350");
             sdk.defineCMacro("PICO_DEFAULT_FLASH_SIZE_BYTES", "\"4 * 1024 * 1024\"");
         },
-        else => @compileError("Unknown platform"),
     }
 }

@@ -1,12 +1,15 @@
 #!/bin/bash -e
 set -e
 
-zig=~/.build/zig/zig-x86_64-linux-0.15.1/zig
+rm -rf zig-out
 
-export PICO_SDK_PATH=~/Code/pico/pico-sdk
-$zig build -Doptimize=ReleaseSafe -freference-trace=10 --verbose-cimport
+zig=~/.build/zig/zig-x86_64-linux-0.15.2/zig
+#zig=~/.build/zig/zig-x86_64-linux-0.16.0-dev.747+493ad58ff/zig
 
-picotool load -x -f zig-out/firmware.uf2
+$zig build -Doptimize=ReleaseSafe -freference-trace=10
+$zig build gen
+
+#picotool load -x -f zig-out/firmware.uf2
 
 exit 0
 

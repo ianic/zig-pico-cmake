@@ -30,7 +30,7 @@ target_link_libraries(app
     hardware_adc
     pico_cyw43_arch_none
     pico_cyw43_arch_lwip_threadsafe_background
-    ${CMAKE_SOURCE_DIR}/zig-out/app.o
+    ${CMAKE_SOURCE_DIR}/zig-out/lib.o
     # wrappers
     -Wl,--wrap=gpioc_bit_out_put
     -Wl,--wrap=gpioc_bit_oe_put
