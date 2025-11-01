@@ -248,6 +248,7 @@ pub fn defineMacros(sdk: *std.Build.Step.TranslateC) void {
             sdk.defineCMacro("PICO_DEFAULT_FLASH_SIZE_BYTES", "\"2 * 1024 * 1024\"");
         },
         .rp2350 => {
+            // from sdk: src/rp2350-arm-s.cmake
             sdk.defineCMacro("PICO_RP2350", "1");
             sdk.defineCMacro("PICO_32BIT", "1");
             sdk.defineCMacro("PICO_ARM", "1");
@@ -255,6 +256,11 @@ pub fn defineMacros(sdk: *std.Build.Step.TranslateC) void {
             sdk.defineCMacro("NUM_DOORBELLS", "1");
             sdk.defineCMacro("PICO_CMSIS_DEVICE", "RP2350");
             sdk.defineCMacro("PICO_DEFAULT_FLASH_SIZE_BYTES", "\"4 * 1024 * 1024\"");
+
+            // can't translate spinlock without this:
+            // /home/ianic/Code/pico/pico-sdk/src/rp2_common/hardware_sync_spin_lock/include/hardware/sync/spin_lock.h:165:2: error: no SW_SPIN_LOCK_LOCK available for PICO_USE_SW_SPIN_LOCK on this platform
+            // #error no SW_SPIN_LOCK_LOCK available for PICO_USE_SW_SPIN_LOCK on this platform
+            sdk.defineCMacro("__ARM_ARCH_8M_MAIN__", "1");
         },
     }
 }

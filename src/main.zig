@@ -38,6 +38,9 @@ fn _main() !void {
     var timer: hal.Timer = .{};
     try timer.init(5000, onTimer);
 
+    var timer2: hal.Timer = .{};
+    try timer2.init(10000, onTimer2);
+
     var i: u32 = 0;
     while (true) {
         cyw.ledPut(true);
@@ -58,5 +61,10 @@ fn _main() !void {
 
 fn onTimer(_: ?*hal.Timer.T) callconv(.c) bool {
     log.debug("onTimer", .{});
+    return true;
+}
+
+fn onTimer2(_: ?*hal.Timer.T) callconv(.c) bool {
+    log.debug("onTimer2", .{});
     return true;
 }
