@@ -28,7 +28,6 @@ target_include_directories(app PRIVATE
 target_link_libraries(app
     pico_stdlib
     hardware_adc
-    pico_cyw43_arch_none
     pico_cyw43_arch_lwip_threadsafe_background
     ${CMAKE_SOURCE_DIR}/zig-out/lib.o
     # wrappers
