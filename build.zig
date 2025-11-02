@@ -144,7 +144,7 @@ pub fn build(b: *std.Build) anyerror!void {
             const pico_sdk_src = try std.fmt.allocPrint(b.allocator, "{s}/src", .{pico_sdk_path});
             var dir = try std.fs.cwd().openDir(pico_sdk_src, .{
                 .iterate = true,
-                .no_follow = true,
+                .follow_symlinks = false,
             });
 
             const allowed_paths = [_][]const u8{ @tagName(config.board.platform()), "rp2_common", "common" };

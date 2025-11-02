@@ -31,8 +31,61 @@ target_link_libraries(app
     pico_cyw43_arch_lwip_threadsafe_background
     ${CMAKE_SOURCE_DIR}/zig-out/lib.o
     # wrappers
+    -Wl,--wrap=gpioc_lo_out_put
+    -Wl,--wrap=gpioc_lo_out_xor
+    -Wl,--wrap=gpioc_lo_out_set
+    -Wl,--wrap=gpioc_lo_out_clr
+    -Wl,--wrap=gpioc_hi_out_put
+    -Wl,--wrap=gpioc_hi_out_xor
+    -Wl,--wrap=gpioc_hi_out_set
+    -Wl,--wrap=gpioc_hi_out_clr
+    -Wl,--wrap=gpioc_hilo_out_put
+    -Wl,--wrap=gpioc_hilo_out_xor
+    -Wl,--wrap=gpioc_hilo_out_set
+    -Wl,--wrap=gpioc_hilo_out_clr
+    -Wl,--wrap=gpioc_lo_oe_put
+    -Wl,--wrap=gpioc_lo_oe_xor
+    -Wl,--wrap=gpioc_lo_oe_set
+    -Wl,--wrap=gpioc_lo_oe_clr
+    -Wl,--wrap=gpioc_hi_oe_put
+    -Wl,--wrap=gpioc_hi_oe_xor
+    -Wl,--wrap=gpioc_hi_oe_set
+    -Wl,--wrap=gpioc_hi_oe_clr
+    -Wl,--wrap=gpioc_hilo_oe_put
+    -Wl,--wrap=gpioc_hilo_oe_xor
+    -Wl,--wrap=gpioc_hilo_oe_set
+    -Wl,--wrap=gpioc_hilo_oe_clr
     -Wl,--wrap=gpioc_bit_out_put
+    -Wl,--wrap=gpioc_bit_out_xor
+    -Wl,--wrap=gpioc_bit_out_set
+    -Wl,--wrap=gpioc_bit_out_clr
+    -Wl,--wrap=gpioc_bit_out_xor2
+    -Wl,--wrap=gpioc_bit_out_set2
+    -Wl,--wrap=gpioc_bit_out_clr2
     -Wl,--wrap=gpioc_bit_oe_put
+    -Wl,--wrap=gpioc_bit_oe_xor
+    -Wl,--wrap=gpioc_bit_oe_set
+    -Wl,--wrap=gpioc_bit_oe_clr
+    -Wl,--wrap=gpioc_bit_oe_xor2
+    -Wl,--wrap=gpioc_bit_oe_set2
+    -Wl,--wrap=gpioc_bit_oe_clr2
+    -Wl,--wrap=gpioc_index_out_put
+    -Wl,--wrap=gpioc_index_out_xor
+    -Wl,--wrap=gpioc_index_out_set
+    -Wl,--wrap=gpioc_index_out_clr
+    -Wl,--wrap=gpioc_index_oe_put
+    -Wl,--wrap=gpioc_index_oe_xor
+    -Wl,--wrap=gpioc_index_oe_set
+    -Wl,--wrap=gpioc_index_oe_clr
+    -Wl,--wrap=gpioc_lo_out_get
+    -Wl,--wrap=gpioc_hi_out_get
+    -Wl,--wrap=gpioc_hilo_out_get
+    -Wl,--wrap=gpioc_lo_oe_get
+    -Wl,--wrap=gpioc_hi_oe_get
+    -Wl,--wrap=gpioc_hilo_oe_get
+    -Wl,--wrap=gpioc_lo_in_get
+    -Wl,--wrap=gpioc_hi_in_get
+    -Wl,--wrap=gpioc_hilo_in_get
 )
 
 # Generate binary

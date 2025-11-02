@@ -1,0 +1,14 @@
+.{
+    .name = .pico,
+    .version = "0.0.0",
+    .fingerprint = 0x9ea0cb823372f270,
+    .minimum_zig_version = "0.16.0-dev.1204+389368392",
+    //.minimum_zig_version = "0.15.2",
+    .dependencies = .{},
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+        "zigroot",
+    },
+}
