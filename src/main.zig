@@ -22,9 +22,9 @@ export fn main() c_int {
 }
 
 fn _main() !void {
-    stdio.init();
+    try stdio.init();
     adc.initOnboardTemp();
-    cyw.init();
+    try cyw.init();
 
     const led_pin = 15;
     gpio.init(led_pin, .output);

@@ -25,18 +25,12 @@ pub fn logFn(
 }
 
 pub const stdio = struct {
-    pub fn init() void {
-        if (!c.stdio_init_all()) {
-            @panic("stdio init failed");
-        }
+    pub fn init() !void {
+        try check(c.stdio_init_all());
     }
     pub const printf = c.printf;
     pub fn sleep(ms: u32) void {
         c.sleep_ms(ms);
-    }
-
-    pub fn print(buf: []const u8) void {
-        _ = c.printf("%.*s", buf.len, &buf[0]);
     }
 };
 
@@ -53,10 +47,8 @@ pub const Timer = struct {
 
 // cyw43 chip
 pub const cyw = struct {
-    pub fn init() void {
-        if (c.cyw43_arch_init() != 0) {
-            @panic("cyw43 init failed");
-        }
+    pub fn init() !void {
+        try check(c.cyw43_arch_init());
     }
 
     pub fn ledPut(value: bool) void {
@@ -113,7 +105,6 @@ pub const adc = struct {
     pub fn init(input: u32) void {
         c.adc_init();
         c.adc_select_input(input);
-        c.adc_set_temp_sensor_enabled(true);
     }
 
     pub fn initOnboardTemp() void {
@@ -139,7 +130,7 @@ pub const adc = struct {
     }
 };
 
-pub fn check(res: anytype) !void {
+fn check(res: anytype) !void {
     switch (@TypeOf(res)) {
         c.err_t, c_int => {
             if (res >= 0) return;

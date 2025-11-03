@@ -14,16 +14,18 @@ pub fn build(b: *std.Build) anyerror!void {
         .os_tag = .freestanding,
     });
     const optimize = b.standardOptimizeOption(.{});
+    const root = b.build_root.handle;
+    try root.setAsCwd();
 
     // Create build directory
-    std.fs.cwd().makeDir("build") catch |err| {
+    root.makeDir("build") catch |err| {
         if (err != error.PathAlreadyExists) return err;
     };
 
     // Find and check pico sdk location
     const pico_sdk_path = brk: {
         const pico_sdk_path = if (config.pico_sdk_path) |sdk_path|
-            try std.fs.cwd().realpathAlloc(b.allocator, sdk_path)
+            try root.realpathAlloc(b.allocator, sdk_path)
         else
             std.process.getEnvVarOwned(b.allocator, "PICO_SDK_PATH") catch |err| {
                 std.log.err("The Pico SDK path must be set either through the PICO_SDK_PATH environment variable or at the top of build.zig.", .{});
@@ -32,7 +34,7 @@ pub fn build(b: *std.Build) anyerror!void {
         // perform basic verification on the pico sdk path
         // if the sdk path contains the pico_sdk_init.cmake file then we know its correct
         const pico_init_cmake_path = b.pathJoin(&.{ pico_sdk_path, "pico_sdk_init.cmake" });
-        std.fs.cwd().access(pico_init_cmake_path, .{}) catch {
+        root.access(pico_init_cmake_path, .{}) catch {
             std.log.err(
                 \\Provided Pico SDK path does not contain the file pico_sdk_init.cmake
                 \\Tried: {s}
@@ -96,7 +98,7 @@ pub fn build(b: *std.Build) anyerror!void {
             const board_header = blk: {
                 const file_name = @tagName(config.board) ++ ".h";
                 const path = b.pathJoin(&.{ pico_sdk_path, "src/boards/include/boards", file_name });
-                std.fs.cwd().access(path, .{}) catch |err| {
+                root.access(path, .{}) catch |err| {
                     std.log.err("Could not find the header file for board at '{s}'\n", .{path});
                     return err;
                 };
@@ -142,7 +144,7 @@ pub fn build(b: *std.Build) anyerror!void {
         // Find all folders called include in the Pico SDK folder
         {
             const pico_sdk_src = try std.fmt.allocPrint(b.allocator, "{s}/src", .{pico_sdk_path});
-            var dir = try std.fs.cwd().openDir(pico_sdk_src, .{
+            var dir = try root.openDir(pico_sdk_src, .{
                 .iterate = true,
                 .follow_symlinks = false,
             });
