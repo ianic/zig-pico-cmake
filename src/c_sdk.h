@@ -1,19 +1,13 @@
 typedef int wint_t;
 
 #include <hardware/adc.h>
-#include <pico.h>
 #include <pico/cyw43_arch.h>
 #include <pico/stdlib.h>
-#include <stdint.h>
-#include <stdio.h>
 
 /* #include <pico/bootrom.h> */
 /* #include <pico/multicore.h> */
 /* #include <pico/platform.h> */
 /* #include <pico/sync.h> */
-
-/* #include <pico/printf.h> */
-/* #include <pico/time.h> */
 
 /* #include <hardware/adc.h> */
 /* // #include <hardware/clocks.h> // ovaj se da ispraviti u source */
@@ -38,3 +32,19 @@ typedef int wint_t;
 /* #include <hardware/vreg.h> */
 /* #include <hardware/watchdog.h> */
 /* #include <hardware/xosc.h> */
+
+/*
+   -> pico/stdlib.h will pull:
+   hardware_divider
+   hardware_gpio
+   hardware_uart
+   pico_runtime
+   pico_platform
+   pico_stdio
+   pico_time
+   pico_util
+
+   -> pico/cyw43_arch.h will pull:
+   stdint.h
+   stdio.h
+*/

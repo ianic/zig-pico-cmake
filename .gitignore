@@ -6,3 +6,4 @@ lib/
 /.zig-cache/
 /src/secrets.zig
 /src/config.zig
+/tmp/

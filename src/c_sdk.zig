@@ -79,9 +79,6 @@ pub fn running_on_fpga() callconv(.c) bool {
 pub fn running_in_sim() callconv(.c) bool {
     return @as(c_int, 0) != 0;
 }
-pub inline fn tight_loop_contents() void {
-    asm volatile ("nop");
-}
 pub fn busy_wait_at_least_cycles(arg_minimum_cycles: u32) callconv(.c) void {
     var minimum_cycles = arg_minimum_cycles;
     _ = &minimum_cycles;
@@ -794,64 +791,6 @@ pub extern fn user_irq_unclaim(irq_num: uint) void;
 pub extern fn user_irq_claim_unused(required: bool) c_int;
 pub extern fn user_irq_is_claimed(irq_num: uint) bool;
 pub extern fn __unhandled_user_irq() void;
-
-// fix
-pub extern fn gpioc_lo_out_put(arg_x: u32) void;
-pub extern fn gpioc_lo_out_xor(arg_x: u32) void;
-pub extern fn gpioc_lo_out_set(arg_x: u32) void;
-pub extern fn gpioc_lo_out_clr(arg_x: u32) void;
-pub extern fn gpioc_hi_out_put(arg_x: u32) void;
-pub extern fn gpioc_hi_out_xor(arg_x: u32) void;
-pub extern fn gpioc_hi_out_set(arg_x: u32) void;
-pub extern fn gpioc_hi_out_clr(arg_x: u32) void;
-pub extern fn gpioc_hilo_out_put(arg_x: u64) void;
-pub extern fn gpioc_hilo_out_xor(arg_x: u64) void;
-pub extern fn gpioc_hilo_out_set(arg_x: u64) void;
-pub extern fn gpioc_hilo_out_clr(arg_x: u64) void;
-pub extern fn gpioc_lo_oe_put(arg_x: u32) void;
-pub extern fn gpioc_lo_oe_xor(arg_x: u32) void;
-pub extern fn gpioc_lo_oe_set(arg_x: u32) void;
-pub extern fn gpioc_lo_oe_clr(arg_x: u32) void;
-pub extern fn gpioc_hi_oe_put(arg_x: u32) void;
-pub extern fn gpioc_hi_oe_xor(arg_x: u32) void;
-pub extern fn gpioc_hi_oe_set(arg_x: u32) void;
-pub extern fn gpioc_hi_oe_clr(arg_x: u32) void;
-pub extern fn gpioc_hilo_oe_put(arg_x: u64) void;
-pub extern fn gpioc_hilo_oe_xor(arg_x: u64) void;
-pub extern fn gpioc_hilo_oe_set(arg_x: u64) void;
-pub extern fn gpioc_hilo_oe_clr(arg_x: u64) void;
-pub extern fn gpioc_bit_out_put(arg_pin: uint, arg_val: bool) void;
-pub extern fn gpioc_bit_out_xor(arg_pin: uint) void;
-pub extern fn gpioc_bit_out_set(arg_pin: uint) void;
-pub extern fn gpioc_bit_out_clr(arg_pin: uint) void;
-pub extern fn gpioc_bit_out_xor2(arg_pin: uint, arg_val: bool) void;
-pub extern fn gpioc_bit_out_set2(arg_pin: uint, arg_val: bool) void;
-pub extern fn gpioc_bit_out_clr2(arg_pin: uint, arg_val: bool) void;
-pub extern fn gpioc_bit_oe_put(arg_pin: uint, arg_val: bool) void;
-pub extern fn gpioc_bit_oe_xor(arg_pin: uint) void;
-pub extern fn gpioc_bit_oe_set(arg_pin: uint) void;
-pub extern fn gpioc_bit_oe_clr(arg_pin: uint) void;
-pub extern fn gpioc_bit_oe_xor2(arg_pin: uint, arg_val: bool) void;
-pub extern fn gpioc_bit_oe_set2(arg_pin: uint, arg_val: bool) void;
-pub extern fn gpioc_bit_oe_clr2(arg_pin: uint, arg_val: bool) void;
-pub extern fn gpioc_index_out_put(arg_reg_index: uint, arg_val: u32) void;
-pub extern fn gpioc_index_out_xor(arg_reg_index: uint, arg_mask: u32) void;
-pub extern fn gpioc_index_out_set(arg_reg_index: uint, arg_mask: u32) void;
-pub extern fn gpioc_index_out_clr(arg_reg_index: uint, arg_mask: u32) void;
-pub extern fn gpioc_index_oe_put(arg_reg_index: uint, arg_val: u32) void;
-pub extern fn gpioc_index_oe_xor(arg_reg_index: uint, arg_mask: u32) void;
-pub extern fn gpioc_index_oe_set(arg_reg_index: uint, arg_mask: u32) void;
-pub extern fn gpioc_index_oe_clr(arg_reg_index: uint, arg_mask: u32) void;
-pub extern fn gpioc_lo_out_get() u32;
-pub extern fn gpioc_hi_out_get() u32;
-pub extern fn gpioc_hilo_out_get() u64;
-pub extern fn gpioc_lo_oe_get() u32;
-pub extern fn gpioc_hi_oe_get() u32;
-pub extern fn gpioc_hilo_oe_get() u64;
-pub extern fn gpioc_lo_in_get() u32;
-pub extern fn gpioc_hi_in_get() u32;
-pub extern fn gpioc_hilo_in_get() u64;
-// fix end
 
 pub const GPIO_OUT: c_int = 1;
 pub const GPIO_IN: c_int = 0;
@@ -2497,24 +2436,6 @@ pub fn bintime_mul(arg__bt: [*c]struct_bintime, arg__x: u_int) callconv(.c) void
         ref.* = @bitCast(@as(c_ulonglong, @truncate(@as(u64, @bitCast(@as(c_longlong, ref.*))) +% (_p2 >> @intCast(32)))));
     }
     _bt.*.frac = (_p2 << @intCast(32)) | (_p1 & @as(c_ulonglong, 4294967295));
-}
-pub fn bintime_shift(arg__bt: [*c]struct_bintime, arg__exp: c_int) callconv(.c) void {
-    var _bt = arg__bt;
-    _ = &_bt;
-    var _exp = arg__exp;
-    _ = &_exp;
-    if (_exp > @as(c_int, 0)) {
-        _bt.*.sec <<= @intCast(_exp);
-        {
-            const ref = &_bt.*.sec;
-            ref.* = @bitCast(@as(c_ulonglong, @truncate(@as(u64, @bitCast(@as(c_longlong, ref.*))) | (_bt.*.frac >> @intCast(@as(c_longlong, @as(c_int, 64) - _exp))))));
-        }
-        _bt.*.frac <<= @intCast(@as(c_longlong, _exp));
-    } else if (_exp < @as(c_int, 0)) {
-        _bt.*.frac >>= @intCast(@as(c_longlong, -_exp));
-        _bt.*.frac |= @as(u64, @bitCast(@as(c_longlong, _bt.*.sec))) << @intCast(@as(c_longlong, @as(c_int, 64) + _exp));
-        _bt.*.sec >>= @intCast(-_exp);
-    }
 }
 pub fn sbintime_getsec(arg__sbt: sbintime_t) callconv(.c) c_int {
     var _sbt = arg__sbt;
@@ -35557,3 +35478,84 @@ pub const stdio_driver = struct_stdio_driver;
 pub const uart_inst = struct_uart_inst;
 pub const dreq_num_rp2350 = enum_dreq_num_rp2350;
 pub const reset_num_rp2350 = enum_reset_num_rp2350;
+
+// preventing optimization
+pub inline fn tight_loop_contents() void {
+    asm volatile ("nop");
+}
+// demoted to external
+pub extern fn gpioc_lo_out_put(arg_x: u32) void;
+pub extern fn gpioc_lo_out_xor(arg_x: u32) void;
+pub extern fn gpioc_lo_out_set(arg_x: u32) void;
+pub extern fn gpioc_lo_out_clr(arg_x: u32) void;
+pub extern fn gpioc_hi_out_put(arg_x: u32) void;
+pub extern fn gpioc_hi_out_xor(arg_x: u32) void;
+pub extern fn gpioc_hi_out_set(arg_x: u32) void;
+pub extern fn gpioc_hi_out_clr(arg_x: u32) void;
+pub extern fn gpioc_hilo_out_put(arg_x: u64) void;
+pub extern fn gpioc_hilo_out_xor(arg_x: u64) void;
+pub extern fn gpioc_hilo_out_set(arg_x: u64) void;
+pub extern fn gpioc_hilo_out_clr(arg_x: u64) void;
+pub extern fn gpioc_lo_oe_put(arg_x: u32) void;
+pub extern fn gpioc_lo_oe_xor(arg_x: u32) void;
+pub extern fn gpioc_lo_oe_set(arg_x: u32) void;
+pub extern fn gpioc_lo_oe_clr(arg_x: u32) void;
+pub extern fn gpioc_hi_oe_put(arg_x: u32) void;
+pub extern fn gpioc_hi_oe_xor(arg_x: u32) void;
+pub extern fn gpioc_hi_oe_set(arg_x: u32) void;
+pub extern fn gpioc_hi_oe_clr(arg_x: u32) void;
+pub extern fn gpioc_hilo_oe_put(arg_x: u64) void;
+pub extern fn gpioc_hilo_oe_xor(arg_x: u64) void;
+pub extern fn gpioc_hilo_oe_set(arg_x: u64) void;
+pub extern fn gpioc_hilo_oe_clr(arg_x: u64) void;
+pub extern fn gpioc_bit_out_put(arg_pin: uint, arg_val: bool) void;
+pub extern fn gpioc_bit_out_xor(arg_pin: uint) void;
+pub extern fn gpioc_bit_out_set(arg_pin: uint) void;
+pub extern fn gpioc_bit_out_clr(arg_pin: uint) void;
+pub extern fn gpioc_bit_out_xor2(arg_pin: uint, arg_val: bool) void;
+pub extern fn gpioc_bit_out_set2(arg_pin: uint, arg_val: bool) void;
+pub extern fn gpioc_bit_out_clr2(arg_pin: uint, arg_val: bool) void;
+pub extern fn gpioc_bit_oe_put(arg_pin: uint, arg_val: bool) void;
+pub extern fn gpioc_bit_oe_xor(arg_pin: uint) void;
+pub extern fn gpioc_bit_oe_set(arg_pin: uint) void;
+pub extern fn gpioc_bit_oe_clr(arg_pin: uint) void;
+pub extern fn gpioc_bit_oe_xor2(arg_pin: uint, arg_val: bool) void;
+pub extern fn gpioc_bit_oe_set2(arg_pin: uint, arg_val: bool) void;
+pub extern fn gpioc_bit_oe_clr2(arg_pin: uint, arg_val: bool) void;
+pub extern fn gpioc_index_out_put(arg_reg_index: uint, arg_val: u32) void;
+pub extern fn gpioc_index_out_xor(arg_reg_index: uint, arg_mask: u32) void;
+pub extern fn gpioc_index_out_set(arg_reg_index: uint, arg_mask: u32) void;
+pub extern fn gpioc_index_out_clr(arg_reg_index: uint, arg_mask: u32) void;
+pub extern fn gpioc_index_oe_put(arg_reg_index: uint, arg_val: u32) void;
+pub extern fn gpioc_index_oe_xor(arg_reg_index: uint, arg_mask: u32) void;
+pub extern fn gpioc_index_oe_set(arg_reg_index: uint, arg_mask: u32) void;
+pub extern fn gpioc_index_oe_clr(arg_reg_index: uint, arg_mask: u32) void;
+pub extern fn gpioc_lo_out_get() u32;
+pub extern fn gpioc_hi_out_get() u32;
+pub extern fn gpioc_hilo_out_get() u64;
+pub extern fn gpioc_lo_oe_get() u32;
+pub extern fn gpioc_hi_oe_get() u32;
+pub extern fn gpioc_hilo_oe_get() u64;
+pub extern fn gpioc_lo_in_get() u32;
+pub extern fn gpioc_hi_in_get() u32;
+pub extern fn gpioc_hilo_in_get() u64;
+
+// removing @bitCast
+pub fn bintime_shift(arg__bt: [*c]struct_bintime, arg__exp: c_int) callconv(.c) void {
+    var _bt = arg__bt;
+    _ = &_bt;
+    var _exp = arg__exp;
+    _ = &_exp;
+    if (_exp > @as(c_int, 0)) {
+        _bt.*.sec <<= @intCast(_exp);
+        {
+            const ref = &_bt.*.sec;
+            ref.* = @bitCast(@as(c_ulonglong, @truncate(@as(u64, @bitCast(@as(c_longlong, ref.*))) | (_bt.*.frac >> @intCast(@as(c_longlong, @as(c_int, 64) - _exp))))));
+        }
+        _bt.*.frac <<= @intCast(@as(c_longlong, _exp));
+    } else if (_exp < @as(c_int, 0)) {
+        _bt.*.frac >>= @intCast(@as(c_longlong, -_exp));
+        _bt.*.frac |= @as(u64, @bitCast(@as(c_longlong, _bt.*.sec))) << @intCast(@as(c_longlong, @as(c_int, 64) + _exp));
+        _bt.*.sec >>= @intCast(-_exp);
+    }
+}
