@@ -4768,19 +4768,19 @@ pub const __ASSERT_FUNC = @compileError("unable to translate C expr: unexpected 
 pub const static_assert = @compileError("unable to translate C expr: unexpected token '_Static_assert'"); // /usr/arm-none-eabi/include/assert.h:45:10
 pub const PARAM_ASSERTIONS_ENABLE_ALL = @as(c_int, 0);
 pub const PARAM_ASSERTIONS_DISABLE_ALL = @as(c_int, 0);
-pub const PARAM_ASSERTIONS_ENABLED = @compileError("unable to translate macro: undefined identifier `PARAM_ASSERTIONS_ENABLED_`"); // /home/ianic/Code/pico/pico-sdk/src/common/pico_base_headers/include/pico/assert.h:32:9
-pub const invalid_params_if = @compileError("unable to translate C expr: unexpected token '{'"); // /home/ianic/Code/pico/pico-sdk/src/common/pico_base_headers/include/pico/assert.h:34:9
-pub const valid_params_if = @compileError("unable to translate C expr: unexpected token '{'"); // /home/ianic/Code/pico/pico-sdk/src/common/pico_base_headers/include/pico/assert.h:35:9
-pub const hard_assert_if = @compileError("unable to translate C expr: unexpected token '{'"); // /home/ianic/Code/pico/pico-sdk/src/common/pico_base_headers/include/pico/assert.h:36:9
-pub const invalid_params_if_and_return = @compileError("unable to translate C expr: unexpected token '{'"); // /home/ianic/Code/pico/pico-sdk/src/common/pico_base_headers/include/pico/assert.h:37:9
+pub const PARAM_ASSERTIONS_ENABLED = @compileError("unable to translate macro: undefined identifier `PARAM_ASSERTIONS_ENABLED_`"); // /home/ianic/Code/pico/pico-sdk/src/common/pico_base_headers/include/pico/assert.h:33:9
+pub const invalid_params_if = @compileError("unable to translate C expr: unexpected token '{'"); // /home/ianic/Code/pico/pico-sdk/src/common/pico_base_headers/include/pico/assert.h:37:9
+pub const valid_params_if = @compileError("unable to translate C expr: unexpected token '{'"); // /home/ianic/Code/pico/pico-sdk/src/common/pico_base_headers/include/pico/assert.h:42:9
+pub const hard_assert_if = @compileError("unable to translate C expr: unexpected token '{'"); // /home/ianic/Code/pico/pico-sdk/src/common/pico_base_headers/include/pico/assert.h:47:9
+pub const invalid_params_if_and_return = @compileError("unable to translate C expr: unexpected token '{'"); // /home/ianic/Code/pico/pico-sdk/src/common/pico_base_headers/include/pico/assert.h:52:9
 pub const hard_assert = assert;
-pub const __stdint_int_c_cat = @compileError("unable to translate C expr: unexpected token '##'"); // /home/ianic/.cache/zig/p/N-V-__8AANdznhSRfEOCrJA7VmtMVvEylt-TYEMgwuQZIagI/lib/compiler/aro/include/stdint.h:12:9
+pub const __stdint_int_c_cat = @compileError("unable to translate C expr: unexpected token '##'"); // /home/ianic/.cache/zig/p/N-V-__8AAHWBnxQuc-d-I0ZtUT2xMOpCAPBItn-rCq0s94BO/lib/compiler/aro/include/stdint.h:12:9
 pub inline fn __stdint_int_c(V: anytype, SUFFIX: anytype) @TypeOf(__stdint_int_c_cat(V, SUFFIX)) {
     _ = &V;
     _ = &SUFFIX;
     return __stdint_int_c_cat(V, SUFFIX);
 }
-pub const __stdint_uint_c = @compileError("unable to translate macro: undefined identifier `U`"); // /home/ianic/.cache/zig/p/N-V-__8AANdznhSRfEOCrJA7VmtMVvEylt-TYEMgwuQZIagI/lib/compiler/aro/include/stdint.h:14:9
+pub const __stdint_uint_c = @compileError("unable to translate macro: undefined identifier `U`"); // /home/ianic/.cache/zig/p/N-V-__8AAHWBnxQuc-d-I0ZtUT2xMOpCAPBItn-rCq0s94BO/lib/compiler/aro/include/stdint.h:14:9
 pub const INTPTR_MIN = -__INTPTR_MAX__ - @as(c_int, 1);
 pub const INTPTR_MAX = __INTPTR_MAX__;
 pub const UINTPTR_MAX = __UINTPTR_MAX__;
@@ -4867,7 +4867,7 @@ pub const INT_FAST64_MIN = -__INT_FAST64_MAX__ - @as(c_int, 1);
 pub const UINT_FAST64_MAX = __UINT_FAST64_MAX__;
 pub const __STDC_VERSION_STDDEF_H__ = @as(c_long, 202311);
 pub const NULL = __helpers.cast(?*anyopaque, @as(c_int, 0));
-pub const offsetof = @compileError("unable to translate macro: undefined identifier `__builtin_offsetof`"); // /home/ianic/.cache/zig/p/N-V-__8AANdznhSRfEOCrJA7VmtMVvEylt-TYEMgwuQZIagI/lib/compiler/aro/include/stddef.h:18:9
+pub const offsetof = @compileError("unable to translate macro: undefined identifier `__builtin_offsetof`"); // /home/ianic/.cache/zig/p/N-V-__8AAHWBnxQuc-d-I0ZtUT2xMOpCAPBItn-rCq0s94BO/lib/compiler/aro/include/stddef.h:18:9
 pub const PICO_OPAQUE_ABSOLUTE_TIME_T = @as(c_int, 0);
 pub const ABSOLUTE_TIME_INITIALIZED_VAR = @compileError("unable to translate C expr: unexpected token '='"); // /home/ianic/Code/pico/pico-sdk/src/common/pico_base_headers/include/pico/types.h:91:9
 pub const PICO_INCLUDE_RTC_DATETIME = @compileError("unable to translate macro: undefined identifier `PICO_RP2040`"); // /home/ianic/Code/pico/pico-sdk/src/common/pico_base_headers/include/pico/types.h:96:9
@@ -4875,11 +4875,7 @@ pub inline fn bool_to_bit(x: anytype) uint {
     _ = &x;
     return __helpers.cast(uint, !!(x != 0));
 }
-pub const _PICO_VERSION_H = "";
-pub const PICO_SDK_VERSION_MAJOR = @as(c_int, 2);
-pub const PICO_SDK_VERSION_MINOR = @as(c_int, 2);
-pub const PICO_SDK_VERSION_REVISION = @as(c_int, 0);
-pub const PICO_SDK_VERSION_STRING = "2.2.0";
+pub const VERSION_H_ = "";
 pub const pico_board_cmake_set = @compileError("unable to translate C expr: unexpected token ''"); // /home/ianic/Code/pico/pico-sdk/src/common/pico_base_headers/include/pico.h:41:9
 pub const pico_board_cmake_set_default = @compileError("unable to translate C expr: unexpected token ''"); // /home/ianic/Code/pico/pico-sdk/src/common/pico_base_headers/include/pico.h:56:9
 pub const _PICO_CONFIG_H = "";
@@ -4914,6 +4910,7 @@ pub const CYW43_DEFAULT_PIN_WL_DATA_IN = @as(c_uint, 24);
 pub const CYW43_DEFAULT_PIN_WL_HOST_WAKE = @as(c_uint, 24);
 pub const CYW43_DEFAULT_PIN_WL_CLOCK = @as(c_uint, 29);
 pub const CYW43_DEFAULT_PIN_WL_CS = @as(c_uint, 25);
+pub const _CMSIS_RENAME_EXCEPTIONS_H = "";
 pub const _PICO_PLATFORM_H = "";
 pub const _PICO_PLATFORM_COMPILER_H = "";
 pub const _HARDWARE_PLATFORM_DEFS_H = "";
@@ -5309,7 +5306,7 @@ pub inline fn check_hw_size(@"type": anytype, size: anytype) @TypeOf(static_asse
     return static_assert(__helpers.sizeof(@"type") == size, "hw size mismatch");
 }
 pub const PARAM_ASSERTIONS_ENABLED_ADDRESS_ALIAS = @as(c_int, 0);
-pub const _REG_ = @compileError("unable to translate C expr: unexpected token ''"); // /home/ianic/Code/pico/pico-sdk/src/rp2_common/hardware_base/include/hardware/address_mapped.h:84:9
+pub const _REG_ = @compileError("unable to translate C expr: unexpected token ''"); // /home/ianic/Code/pico/pico-sdk/src/rp2_common/hardware_base/include/hardware/address_mapped.h:102:9
 pub inline fn hw_alias_check_addr(addr: anytype) usize {
     _ = &addr;
     return __helpers.cast(usize, addr);
@@ -5326,12 +5323,12 @@ pub inline fn hw_xor_alias_untyped(addr: anytype) ?*anyopaque {
     _ = &addr;
     return __helpers.cast(?*anyopaque, REG_ALIAS_XOR_BITS + hw_alias_check_addr(addr));
 }
-pub const hw_set_alias = @compileError("unable to translate C expr: unexpected token 'typeof'"); // /home/ianic/Code/pico/pico-sdk/src/rp2_common/hardware_base/include/hardware/address_mapped.h:122:9
-pub const hw_clear_alias = @compileError("unable to translate C expr: unexpected token 'typeof'"); // /home/ianic/Code/pico/pico-sdk/src/rp2_common/hardware_base/include/hardware/address_mapped.h:123:9
-pub const hw_xor_alias = @compileError("unable to translate C expr: unexpected token 'typeof'"); // /home/ianic/Code/pico/pico-sdk/src/rp2_common/hardware_base/include/hardware/address_mapped.h:124:9
-pub const xip_noalloc_alias = @compileError("unable to translate macro: undefined identifier `xip_noalloc_alias_untyped`"); // /home/ianic/Code/pico/pico-sdk/src/rp2_common/hardware_base/include/hardware/address_mapped.h:125:9
-pub const xip_nocache_alias = @compileError("unable to translate macro: undefined identifier `xip_nocache_alias_untyped`"); // /home/ianic/Code/pico/pico-sdk/src/rp2_common/hardware_base/include/hardware/address_mapped.h:126:9
-pub const xip_nocache_noalloc_alias = @compileError("unable to translate macro: undefined identifier `xip_nocache_noalloc_alias_untyped`"); // /home/ianic/Code/pico/pico-sdk/src/rp2_common/hardware_base/include/hardware/address_mapped.h:127:9
+pub const hw_set_alias = @compileError("unable to translate C expr: unexpected token 'typeof'"); // /home/ianic/Code/pico/pico-sdk/src/rp2_common/hardware_base/include/hardware/address_mapped.h:148:9
+pub const hw_clear_alias = @compileError("unable to translate C expr: unexpected token 'typeof'"); // /home/ianic/Code/pico/pico-sdk/src/rp2_common/hardware_base/include/hardware/address_mapped.h:149:9
+pub const hw_xor_alias = @compileError("unable to translate C expr: unexpected token 'typeof'"); // /home/ianic/Code/pico/pico-sdk/src/rp2_common/hardware_base/include/hardware/address_mapped.h:150:9
+pub const xip_noalloc_alias = @compileError("unable to translate macro: undefined identifier `xip_noalloc_alias_untyped`"); // /home/ianic/Code/pico/pico-sdk/src/rp2_common/hardware_base/include/hardware/address_mapped.h:151:9
+pub const xip_nocache_alias = @compileError("unable to translate macro: undefined identifier `xip_nocache_alias_untyped`"); // /home/ianic/Code/pico/pico-sdk/src/rp2_common/hardware_base/include/hardware/address_mapped.h:152:9
+pub const xip_nocache_noalloc_alias = @compileError("unable to translate macro: undefined identifier `xip_nocache_noalloc_alias_untyped`"); // /home/ianic/Code/pico/pico-sdk/src/rp2_common/hardware_base/include/hardware/address_mapped.h:153:9
 pub const _HARDWARE_STRUCTS_ACCESSCTRL_H = "";
 pub const _HARDWARE_REGS_ACCESSCTRL_H = "";
 pub const accessctrl_hw = __helpers.cast([*c]accessctrl_hw_t, ACCESSCTRL_BASE);
@@ -5901,11 +5898,11 @@ pub const __need_size_t = "";
 pub const __need_NULL = "";
 pub const __need___va_list = "";
 pub const __STDC_VERSION_STDARG_H__ = @as(c_int, 0);
-pub const va_start = @compileError("unable to translate macro: undefined identifier `__builtin_va_start`"); // /home/ianic/.cache/zig/p/N-V-__8AANdznhSRfEOCrJA7VmtMVvEylt-TYEMgwuQZIagI/lib/compiler/aro/include/stdarg.h:12:9
-pub const va_end = @compileError("unable to translate macro: undefined identifier `__builtin_va_end`"); // /home/ianic/.cache/zig/p/N-V-__8AANdznhSRfEOCrJA7VmtMVvEylt-TYEMgwuQZIagI/lib/compiler/aro/include/stdarg.h:14:9
-pub const va_arg = @compileError("unable to translate macro: undefined identifier `__builtin_va_arg`"); // /home/ianic/.cache/zig/p/N-V-__8AANdznhSRfEOCrJA7VmtMVvEylt-TYEMgwuQZIagI/lib/compiler/aro/include/stdarg.h:15:9
-pub const __va_copy = @compileError("unable to translate macro: undefined identifier `__builtin_va_copy`"); // /home/ianic/.cache/zig/p/N-V-__8AANdznhSRfEOCrJA7VmtMVvEylt-TYEMgwuQZIagI/lib/compiler/aro/include/stdarg.h:18:9
-pub const va_copy = @compileError("unable to translate macro: undefined identifier `__builtin_va_copy`"); // /home/ianic/.cache/zig/p/N-V-__8AANdznhSRfEOCrJA7VmtMVvEylt-TYEMgwuQZIagI/lib/compiler/aro/include/stdarg.h:22:9
+pub const va_start = @compileError("unable to translate macro: undefined identifier `__builtin_va_start`"); // /home/ianic/.cache/zig/p/N-V-__8AAHWBnxQuc-d-I0ZtUT2xMOpCAPBItn-rCq0s94BO/lib/compiler/aro/include/stdarg.h:12:9
+pub const va_end = @compileError("unable to translate macro: undefined identifier `__builtin_va_end`"); // /home/ianic/.cache/zig/p/N-V-__8AAHWBnxQuc-d-I0ZtUT2xMOpCAPBItn-rCq0s94BO/lib/compiler/aro/include/stdarg.h:14:9
+pub const va_arg = @compileError("unable to translate macro: undefined identifier `__builtin_va_arg`"); // /home/ianic/.cache/zig/p/N-V-__8AAHWBnxQuc-d-I0ZtUT2xMOpCAPBItn-rCq0s94BO/lib/compiler/aro/include/stdarg.h:15:9
+pub const __va_copy = @compileError("unable to translate macro: undefined identifier `__builtin_va_copy`"); // /home/ianic/.cache/zig/p/N-V-__8AAHWBnxQuc-d-I0ZtUT2xMOpCAPBItn-rCq0s94BO/lib/compiler/aro/include/stdarg.h:18:9
+pub const va_copy = @compileError("unable to translate macro: undefined identifier `__builtin_va_copy`"); // /home/ianic/.cache/zig/p/N-V-__8AAHWBnxQuc-d-I0ZtUT2xMOpCAPBItn-rCq0s94BO/lib/compiler/aro/include/stdarg.h:22:9
 pub const __GNUC_VA_LIST = @as(c_int, 1);
 pub const _VA_LIST_DEFINED = "";
 pub const _SYS_REENT_H_ = "";

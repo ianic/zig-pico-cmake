@@ -5,7 +5,7 @@ include(${PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 project(app)
 pico_sdk_init()
 add_executable(app
-    src/wrappers.c
+    wrappers.c
 )
 
 if (STDIO_USB)
@@ -29,7 +29,7 @@ target_link_libraries(app
     pico_stdlib
     hardware_adc
     pico_cyw43_arch_lwip_threadsafe_background
-    ${CMAKE_SOURCE_DIR}/zig-out/lib.o
+    ${CMAKE_SOURCE_DIR}/../zig-out/lib.o
     # wrappers
     -Wl,--wrap=gpioc_lo_out_put
     -Wl,--wrap=gpioc_lo_out_xor

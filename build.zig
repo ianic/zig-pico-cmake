@@ -16,11 +16,7 @@ pub fn build(b: *std.Build) anyerror!void {
     const optimize = b.standardOptimizeOption(.{});
     const root = b.build_root.handle;
     try root.setAsCwd();
-
-    // Create build directory
-    root.makeDir("build") catch |err| {
-        if (err != error.PathAlreadyExists) return err;
-    };
+    const sdk_dir = try root.openDir("sdk", .{});
 
     // Find and check pico sdk location
     const pico_sdk_path = brk: {
@@ -57,6 +53,11 @@ pub fn build(b: *std.Build) anyerror!void {
     const lib_install = b.addInstallFile(lib.getEmittedBin(), "lib.o");
     lib_install.step.dependOn(&lib.step);
 
+    try sdk_dir.setAsCwd();
+    sdk_dir.makeDir("build") catch |err| {
+        if (err != error.PathAlreadyExists) return err;
+    };
+
     const cmake_argv = [_][]const u8{
         "cmake",
         "-B",
@@ -74,20 +75,20 @@ pub fn build(b: *std.Build) anyerror!void {
     const make_step = b.addSystemCommand(&make_argv);
     make_step.step.dependOn(&cmake_step.step);
 
-    const firmware_install = b.addInstallFile(b.path("build/app.uf2"), "firmware.uf2");
+    const firmware_install = b.addInstallFile(b.path("sdk/build/app.uf2"), "firmware.uf2");
     firmware_install.step.dependOn(&make_step.step);
 
     const uf2_step = b.step("uf2", "Create firmware.uf2");
     uf2_step.dependOn(&firmware_install.step);
     b.default_step = uf2_step;
 
-    // c_sdk.zig generation
+    // sdk.zig generation
     // not run by default
     // use `zig build gen` to run
-    // src/c_sdk.h defines which headers will be included
+    // sdk/imports.h defines which headers will be included
     {
         const sdk = b.addTranslateC(.{
-            .root_source_file = b.path("src/c_sdk.h"),
+            .root_source_file = b.path("sdk/imports.h"),
             .target = target,
             .optimize = optimize,
         });
@@ -175,16 +176,16 @@ pub fn build(b: *std.Build) anyerror!void {
             const lwip_include = try std.fmt.allocPrint(b.allocator, "{s}/lib/lwip/src/include", .{pico_sdk_path});
             sdk.addIncludePath(.{ .cwd_relative = lwip_include });
             // options headers
-            sdk.addIncludePath(b.path("config/"));
+            sdk.addIncludePath(b.path("sdk/config/"));
         }
 
         // requires running cmake at least once
-        sdk.addSystemIncludePath(b.path("build/generated/pico_base"));
+        sdk.addSystemIncludePath(b.path("sdk/build/generated/pico_base"));
 
-        const sdk_install = b.addInstallFile(sdk.getOutput(), "c_sdk.zig");
+        const sdk_install = b.addInstallFile(sdk.getOutput(), "sdk.zig");
         sdk_install.step.dependOn(&sdk.step);
 
-        const gen_step = b.step("gen", "Translate C SDK headers to Zig (result: zig-out/c_sdk.zig)");
+        const gen_step = b.step("gen", "Translate C SDK headers to Zig (result: zig-out/sdk.zig)");
         gen_step.dependOn(&sdk_install.step);
     }
 }

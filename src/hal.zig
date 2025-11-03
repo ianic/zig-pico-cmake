@@ -1,6 +1,6 @@
 const std = @import("std");
 const log = std.log.scoped(.pico);
-const c = @import("c_sdk.zig");
+const c = @import("sdk.zig");
 
 pub fn logFn(
     comptime level: std.log.Level,
