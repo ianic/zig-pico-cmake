@@ -41,8 +41,15 @@ fn _main() !void {
     var timer2: hal.Timer = .{};
     try timer2.init(10000, onTimer2);
 
+    //const ow: hal.OneWire = .init(22);
+    const ts: hal.TempSensor = .init(22);
+
     var i: u32 = 0;
     while (true) {
+        ts.convert() catch |err| {
+            log.err("temperature sensor convert {}", .{err});
+        };
+
         cyw.ledPut(true);
         gpio.put(led_pin, false);
         stdio.sleep(250);
@@ -56,6 +63,12 @@ fn _main() !void {
         i +%= 1;
 
         try udp.send("iso medo u ducan, nije reko dobar dan, ajde medo van nisi reko dobar dan\n");
+
+        if (ts.read()) |temp| {
+            log.info("temp: {}", .{temp});
+        } else |err| {
+            log.err("temperature sensor read {}", .{err});
+        }
     }
 }
 
